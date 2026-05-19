@@ -9,6 +9,7 @@ import {
   resetAllStudentSessions,
   updateStudent,
 } from "@/lib/supabase/data";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { courseOptions, levelOptions } from "@/lib/supabase/constants";
 import { ProfileRecord } from "@/lib/supabase/types";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
@@ -25,6 +26,7 @@ type StudentForm = {
   level: ProfileRecord["level"];
   email: string;
   username: string;
+  password: string;
   session: string;
   points: string;
   hours: string;
@@ -40,6 +42,7 @@ const emptyForm: StudentForm = {
   level: "1",
   email: "",
   username: "",
+  password: "",
   session: "0",
   points: "0",
   hours: "0",
@@ -140,6 +143,7 @@ export default function AdminStudentsPage() {
       level: student.level,
       email: student.email,
       username: student.username,
+      password: "",
       session: String(student.session_remaining),
       points: String(student.points),
       hours: String(student.hours_spent),
@@ -151,8 +155,75 @@ export default function AdminStudentsPage() {
 
   const saveStudent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setError(""); // Clear any previous errors
+    
+    // Validate required fields
+    if (!form.email.trim()) {
+      setError("Email is required.");
+      return;
+    }
+    if (!form.firstname.trim()) {
+      setError("First name is required.");
+      return;
+    }
+    if (!form.lastname.trim()) {
+      setError("Last name is required.");
+      return;
+    }
+    if (!form.idno.trim()) {
+      setError("ID number is required.");
+      return;
+    }
+    
     try {
       if (editing) {
+        console.log('Editing student with ID:', editing.id);
+        if (!editing.id) {
+          // Try to resolve missing ID by email or idno
+          if (isSupabaseConfigured) {
+            try {
+              const supabase = getSupabaseBrowserClient();
+              const { data: found, error } = await supabase
+                .from('profiles')
+                .select('id')
+                .or(`email.eq.${form.email},idno.eq.${form.idno}`)
+                .maybeSingle();
+              if (error) {
+                console.error('Error resolving profile id:', error);
+              }
+              if (found?.id) {
+                const resolvedId = found.id as string;
+                setEditing({ ...editing, id: resolvedId });
+                console.log('Resolved missing editing.id from profiles:', resolvedId);
+                // proceed using resolvedId
+                const updated = await updateStudent(resolvedId, {
+                  idno: form.idno,
+                  firstname: form.firstname,
+                  middlename: form.middlename,
+                  lastname: form.lastname,
+                  course: form.course,
+                  level: form.level,
+                  email: form.email,
+                  username: form.username,
+                  password: form.password || undefined,
+                  session_remaining: Number(form.session || 0),
+                  points: Number(form.points || 0),
+                  hours_spent: Number(form.hours || 0),
+                  tasks_completed: Number(form.tasks || 0),
+                } as any);
+                setRecords((current) => current.map((student) => (student.id === resolvedId ? updated : student)));
+                setShowAdd(false);
+                setEditing(null);
+                return;
+              }
+            } catch (err) {
+              console.error('Failed to resolve editing.id', err);
+            }
+          }
+
+          setError('Student ID is missing. This record may be corrupted in the database.');
+          return;
+        }
         const updated = await updateStudent(editing.id, {
           idno: form.idno,
           firstname: form.firstname,
@@ -162,11 +233,12 @@ export default function AdminStudentsPage() {
           level: form.level,
           email: form.email,
           username: form.username,
+          password: form.password || undefined,
           session_remaining: Number(form.session || 0),
           points: Number(form.points || 0),
           hours_spent: Number(form.hours || 0),
           tasks_completed: Number(form.tasks || 0),
-        });
+        } as any);
         setRecords((current) => current.map((student) => (student.id === editing.id ? updated : student)));
       } else {
         const created = await createStudent({
@@ -178,6 +250,7 @@ export default function AdminStudentsPage() {
           level: form.level,
           email: form.email,
           username: form.username,
+          password: form.password || undefined,
           session_remaining: Number(form.session || 0),
           points: Number(form.points || 0),
           hours_spent: Number(form.hours || 0),
@@ -191,10 +264,41 @@ export default function AdminStudentsPage() {
     }
   };
 
-  const onDeleteStudent = async (studentId: string) => {
+  const onDeleteStudent = async (studentId: string | null | undefined, studentEmail?: string) => {
+    console.log('onDeleteStudent called with ID:', studentId, 'email:', studentEmail);
+
+    let uid = studentId ?? null;
+
+    // Try to resolve missing ID by email or idno lookup
+    if ((!uid || uid.trim() === '') && studentEmail && isSupabaseConfigured) {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data: found, error } = await supabase.from('profiles').select('id').eq('email', studentEmail).maybeSingle();
+        if (error) {
+          console.error('Error resolving profile by email:', error);
+        }
+        if (found?.id) {
+          uid = found.id;
+          console.log('Resolved student ID from email:', uid);
+        }
+      } catch (err) {
+        console.error('Failed to resolve student ID from email', err);
+      }
+    }
+
+    if (!uid || uid.trim() === '') {
+      setError('Student ID is missing. Unable to delete. Please fix the profile record in the database.');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to delete this student? This will remove their account and they will no longer be able to log in.')) {
+      return;
+    }
+
     try {
-      await deleteStudent(studentId);
-      setRecords((current) => current.filter((student) => student.id !== studentId));
+      await deleteStudent(uid);
+      setRecords((current) => current.filter((student) => student.id !== uid));
+      setError(''); // Clear error on success
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Unable to delete student.");
     }
@@ -514,9 +618,11 @@ export default function AdminStudentsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void onDeleteStudent(student.id)}
-                        className="rounded-md px-2 py-2 text-red-500"
+                        onClick={() => void onDeleteStudent(student.id, student.email)}
+                        disabled={!student.id && !student.email}
+                        className={`rounded-md px-2 py-2 ${student.id ? 'text-red-500 cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
                         aria-label={`Delete ${student.idno}`}
+                        title={student.id ? 'Delete student' : student.email ? 'Resolve by email then delete' : 'Student ID missing - cannot delete'}
                       >
                         <i className="fas fa-trash" />
                       </button>
@@ -576,6 +682,13 @@ export default function AdminStudentsPage() {
                   className="rounded-md border border-gray-300 p-2"
                   placeholder="Username"
                 />
+                <input
+                  value={form.password}
+                  onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                  className="rounded-md border border-gray-300 p-2"
+                  placeholder="Password (set initial password)"
+                  type="password"
+                />
                 <select
                   value={form.course}
                   onChange={(event) =>
@@ -602,38 +715,6 @@ export default function AdminStudentsPage() {
                     </option>
                   ))}
                 </select>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.session}
-                  onChange={(event) => setForm((current) => ({ ...current, session: event.target.value }))}
-                  className="rounded-md border border-gray-300 p-2"
-                  placeholder="Session"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  value={form.points}
-                  onChange={(event) => setForm((current) => ({ ...current, points: event.target.value }))}
-                  className="rounded-md border border-gray-300 p-2"
-                  placeholder="Points"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  value={form.hours}
-                  onChange={(event) => setForm((current) => ({ ...current, hours: event.target.value }))}
-                  className="rounded-md border border-gray-300 p-2"
-                  placeholder="Hours Spent"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  value={form.tasks}
-                  onChange={(event) => setForm((current) => ({ ...current, tasks: event.target.value }))}
-                  className="rounded-md border border-gray-300 p-2"
-                  placeholder="Tasks Completed"
-                />
               </div>
               <div className="mt-6 flex justify-end gap-3">
                 <button

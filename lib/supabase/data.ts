@@ -53,6 +53,66 @@ function wait(ms: number) {
   });
 }
 
+type AuthUserLike = {
+  id: string;
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+};
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function coerceCourse(value: unknown): Course {
+  const candidate = stringValue(value).toUpperCase();
+  return ["BSIT", "BSCS", "HM", "CRIM", "CBA"].includes(candidate) ? (candidate as Course) : "BSIT";
+}
+
+function coerceLevel(value: unknown): Level {
+  const candidate = stringValue(value);
+  return ["1", "2", "3", "4"].includes(candidate) ? (candidate as Level) : "1";
+}
+
+function buildFallbackProfile(user: AuthUserLike): ProfileRecord {
+  const metadata = user.user_metadata ?? {};
+  const firstname = stringValue(metadata.firstname) || "Student";
+  const lastname = stringValue(metadata.lastname) || "User";
+  const middlename = stringValue(metadata.middlename);
+  const idno = stringValue(metadata.idno) || user.id;
+  const email = stringValue(metadata.email) || user.email || "";
+  const username = stringValue(metadata.username) || idno || email || user.id;
+  const now = new Date().toISOString();
+
+  return {
+    id: user.id,
+    idno,
+    firstname,
+    middlename,
+    lastname,
+    email,
+    username,
+    course: coerceCourse(metadata.course),
+    level: coerceLevel(metadata.level),
+    role: metadata.role === "admin" ? "admin" : "student",
+    session_remaining:
+      typeof metadata.session_remaining === "number" && Number.isFinite(metadata.session_remaining)
+        ? metadata.session_remaining
+        : 30,
+    points: typeof metadata.points === "number" && Number.isFinite(metadata.points) ? metadata.points : 0,
+    tasks_completed:
+      typeof metadata.tasks_completed === "number" && Number.isFinite(metadata.tasks_completed)
+        ? metadata.tasks_completed
+        : 0,
+    hours_spent:
+      typeof metadata.hours_spent === "number" && Number.isFinite(metadata.hours_spent)
+        ? metadata.hours_spent
+        : 0,
+    avatar_url: stringValue(metadata.avatar_url) || null,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
 async function waitForSessionUserId(timeoutMs: number) {
   const supabase = getSupabaseBrowserClient();
   const startedAt = Date.now();
@@ -196,7 +256,26 @@ export async function signInWithPassword(identifier: string, password: string) {
   const supabase = getSupabaseBrowserClient();
   try {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    handleError(error, "Unable to sign in.");
+    if (error) {
+      const msg = error.message || "";
+      if (msg.toLowerCase().includes("email not confirmed")) {
+        try {
+          const res = await fetch('/api/auth/confirm-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          if (res.ok) {
+            const retryResult = await supabase.auth.signInWithPassword({ email, password });
+            handleError(retryResult.error, "Unable to sign in.");
+            return retryResult.data;
+          }
+        } catch (apiError) {
+          console.error("Auto-confirmation failed:", apiError);
+        }
+      }
+      handleError(error, "Unable to sign in.");
+    }
     return data;
   } catch (error) {
     rethrowSupabaseError(error);
@@ -220,43 +299,37 @@ export async function signUpStudent(input: {
     email: input.email.trim(),
     username: input.username.trim(),
   });
+
   if (conflictMessage) {
     throw new Error(conflictMessage);
   }
 
   try {
-    const supabase = getSupabaseBrowserClient();
-    const { data, error } = await supabase.auth.signUp({
+    const body = {
+      idno: input.idno.trim(),
+      firstname: input.firstname.trim(),
+      middlename: input.middlename.trim(),
+      lastname: input.lastname.trim(),
+      course: input.course,
+      level: input.level,
       email: input.email.trim().toLowerCase(),
+      username: input.username.trim(),
       password: input.password,
-      options: {
-        data: {
-          idno: input.idno.trim(),
-          lastname: input.lastname.trim(),
-          firstname: input.firstname.trim(),
-          middlename: input.middlename.trim(),
-          course: input.course,
-          level: input.level,
-          username: input.username.trim(),
-          role: "student",
-        },
-      },
+    };
+
+    const res = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-    if (error) {
-      const message = error.message || "";
-      if (message.toLowerCase().includes("database error saving new user")) {
-        const retryConflictMessage = await getRegistrationConflictMessage({
-          idno: input.idno,
-          email: input.email,
-          username: input.username,
-        });
-        if (retryConflictMessage) {
-          throw new Error(retryConflictMessage);
-        }
-      }
-      throw new Error(message || "Unable to register account.");
+
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload.error || 'Unable to register account.');
     }
-    return data;
+
+    const payload = await res.json();
+    return payload;
   } catch (error) {
     rethrowSupabaseError(error);
   }
@@ -302,7 +375,20 @@ export async function getCurrentProfile() {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
   handleError(error, "Unable to fetch profile.");
-  return (data as ProfileRecord | null) ?? null;
+  if (data) {
+    return data as ProfileRecord;
+  }
+
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (isAuthSessionMissingError(authError)) {
+    return null;
+  }
+  handleError(authError, "Unable to read auth user.");
+  if (!authData.user) {
+    return null;
+  }
+
+  return buildFallbackProfile(authData.user as AuthUserLike);
 }
 
 export async function getCurrentProfileWithRetry(options?: { attempts?: number; delayMs?: number }) {
@@ -316,6 +402,10 @@ export async function getCurrentProfileWithRetry(options?: { attempts?: number; 
       if (!userId) {
         userId = await getCurrentUserId({ waitForSessionMs: index === 0 ? 6000 : 0 });
         if (!userId) {
+          if (index < attempts - 1) {
+            await wait(delayMs);
+            continue;
+          }
           return null;
         }
       }
@@ -325,6 +415,15 @@ export async function getCurrentProfileWithRetry(options?: { attempts?: number; 
       handleError(error, "Unable to fetch profile.");
       if (data) {
         return data as ProfileRecord;
+      }
+
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (isAuthSessionMissingError(authError)) {
+        return null;
+      }
+      handleError(authError, "Unable to read auth user.");
+      if (authData.user) {
+        return buildFallbackProfile(authData.user as AuthUserLike);
       }
     } catch (error) {
       if (!isFailedFetchError(error) && !isAuthSessionMissingError(error)) {
@@ -838,40 +937,77 @@ export async function createStudent(input: {
   points: number;
   tasks_completed: number;
   hours_spent: number;
+  password?: string;
 }) {
+  // Create an auth user + profile via server-side admin endpoint
   ensureConfigured();
-  const supabase = getSupabaseBrowserClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .insert({
-      ...input,
-      role: "student",
-    })
-    .select("*")
-    .single();
-  handleError(error, "Unable to create student.");
-  return data as ProfileRecord;
+  const body = {
+    idno: input.idno,
+    firstname: input.firstname,
+    middlename: input.middlename,
+    lastname: input.lastname,
+    course: input.course,
+    level: input.level,
+    email: input.email,
+    username: input.username,
+    // default password: use idno if available otherwise random
+    password: input.password || input.idno || `pass-${Math.random().toString(36).slice(2, 10)}`,
+  };
+
+  const res = await fetch('/api/admin/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    throw new Error(payload.error || 'Unable to create student account.');
+  }
+  const payload = await res.json();
+  return payload.profile as ProfileRecord;
 }
 
-export async function updateStudent(id: string, patch: Partial<ProfileRecord>) {
+export async function updateStudent(id: string, patch: Partial<ProfileRecord> & { password?: string }) {
   ensureConfigured();
-  const supabase = getSupabaseBrowserClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .eq("role", "student")
-    .select("*")
-    .single();
-  handleError(error, "Unable to update student.");
-  return data as ProfileRecord;
+  
+  // Validate ID
+  if (!id || id.trim() === '') {
+    console.error('updateStudent called with empty ID');
+    throw new Error('Student ID is required for updates');
+  }
+  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password, id: _id, created_at: _created, updated_at: _updated, ...profilePatch } = patch as Record<string, unknown>;
+  
+  const res = await fetch(`/api/admin/users/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      profile: profilePatch, 
+      password: password || undefined,
+      email: profilePatch.email || undefined,
+    }),
+  });
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    throw new Error(payload.error || `Unable to update student account (${res.status})`);
+  }
+  const payload = await res.json();
+  return payload.profile as ProfileRecord;
 }
 
 export async function deleteStudent(id: string) {
   ensureConfigured();
-  const supabase = getSupabaseBrowserClient();
-  const { error } = await supabase.from("profiles").delete().eq("id", id).eq("role", "student");
-  handleError(error, "Unable to delete student.");
+  if (!id || id.trim() === '') {
+    console.error('deleteStudent called with empty ID');
+    throw new Error('Student ID is required for deletion');
+  }
+  
+  const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    throw new Error(payload.error || `Unable to delete student account (${res.status})`);
+  }
 }
 
 export async function resetAllStudentSessions(sessionRemaining = 30) {
