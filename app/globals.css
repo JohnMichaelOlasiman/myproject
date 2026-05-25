@@ -593,3 +593,556 @@ body {
     overflow-x: clip;
   }
 }
+
+/* Hallmark pre-emit critique: P5 H4 E4 S5 R4 V4 */
+.ccs-student-root {
+  --student-font-body: var(--font-ibm-plex-sans);
+  --student-font-display: var(--font-fraunces);
+  --student-ink: oklch(21% 0.045 276);
+  --student-ink-soft: oklch(43% 0.035 271);
+  --student-muted: oklch(58% 0.028 266);
+  --student-paper: oklch(98% 0.009 87);
+  --student-panel: oklch(100% 0 0);
+  --student-surface: oklch(96% 0.012 91);
+  --student-line: oklch(86% 0.018 268);
+  --student-line-strong: oklch(72% 0.035 271);
+  --student-plum: oklch(33% 0.128 308);
+  --student-plum-soft: oklch(47% 0.115 309);
+  --student-plum-wash: oklch(94% 0.03 312);
+  --student-gold: oklch(77% 0.145 82);
+  --student-gold-wash: oklch(92% 0.065 88);
+  --student-green: oklch(58% 0.14 151);
+  --student-red: oklch(56% 0.17 29);
+  --student-red-wash: oklch(96% 0.025 23);
+  --student-blue: oklch(52% 0.12 247);
+  --student-focus: color-mix(in oklch, var(--student-plum-soft) 32%, transparent);
+  --student-radius: 8px;
+  --student-sidebar-width: 272px;
+  --student-shadow: 0 16px 42px color-mix(in oklch, var(--student-ink) 11%, transparent);
+  --student-shadow-raised: 0 24px 70px color-mix(in oklch, var(--student-ink) 18%, transparent);
+  display: grid;
+  min-height: 100dvh;
+  grid-template-columns: var(--student-sidebar-width) minmax(0, 1fr);
+  background:
+    linear-gradient(90deg, color-mix(in oklch, var(--student-line) 40%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in oklch, var(--student-line) 32%, transparent) 1px, transparent 1px),
+    linear-gradient(135deg, var(--student-paper), var(--student-surface));
+  background-size: 92px 92px, 92px 92px, auto;
+  color: var(--student-ink);
+  font-family: var(--student-font-body), system-ui, sans-serif;
+}
+
+.ccs-student-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+  border-right: 1px solid var(--student-line);
+  background:
+    linear-gradient(180deg, var(--student-panel), color-mix(in oklch, var(--student-plum-wash) 52%, var(--student-panel)));
+  color: var(--student-ink);
+  padding: 22px 16px;
+}
+
+.ccs-student-sidebar::after {
+  content: "";
+  display: block;
+  height: 6px;
+  margin-top: 20px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--student-plum), var(--student-gold), transparent);
+}
+
+.ccs-student-brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border-bottom: 1px solid var(--student-line);
+  padding-bottom: 18px;
+}
+
+.ccs-student-brand img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.ccs-student-brand p,
+.ccs-student-brand h1 {
+  margin: 0;
+}
+
+.ccs-student-brand p {
+  color: var(--student-plum);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ccs-student-brand h1 {
+  color: var(--student-ink);
+  font-family: var(--student-font-display), Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.04;
+  overflow-wrap: anywhere;
+}
+
+.ccs-student-nav {
+  display: grid;
+  gap: 6px;
+  margin-top: 22px;
+}
+
+.ccs-student-nav-item,
+.ccs-student-subnav-item {
+  display: flex;
+  min-height: 43px;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid transparent;
+  border-radius: var(--student-radius);
+  color: var(--student-ink-soft);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 12px;
+  text-decoration: none;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.ccs-student-nav-button {
+  width: 100%;
+  background: transparent;
+  cursor: default;
+  font-family: inherit;
+  text-align: left;
+}
+
+.ccs-student-nav-item i,
+.ccs-student-subnav-item i {
+  width: 18px;
+  flex: 0 0 18px;
+  color: var(--student-plum);
+  text-align: center;
+}
+
+.ccs-student-nav-chevron {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.ccs-student-nav-item:hover,
+.ccs-student-subnav-item:hover,
+.ccs-student-nav-item[data-active="true"],
+.ccs-student-subnav-item[data-active="true"] {
+  border-color: color-mix(in oklch, var(--student-plum) 22%, var(--student-line));
+  background: var(--student-plum-wash);
+  color: var(--student-plum);
+}
+
+.ccs-student-nav-item[data-active="true"] {
+  box-shadow: inset 4px 0 0 var(--student-gold);
+}
+
+.ccs-student-nav-children {
+  display: grid;
+  gap: 4px;
+  margin: 5px 0 8px;
+  padding-left: 18px;
+}
+
+.ccs-student-subnav-item {
+  min-height: 34px;
+  color: var(--student-muted);
+  font-size: 13px;
+  font-weight: 650;
+  padding: 7px 10px;
+}
+
+.ccs-student-content {
+  min-width: 0;
+}
+
+.ccs-student-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  min-height: 86px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--student-line);
+  background: color-mix(in oklch, var(--student-panel) 88%, transparent);
+  backdrop-filter: blur(18px);
+  padding: 18px 28px;
+}
+
+.ccs-student-eyebrow {
+  margin: 0 0 3px;
+  color: var(--student-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ccs-student-header h2 {
+  margin: 0;
+  color: var(--student-ink);
+  font-family: var(--student-font-display), Georgia, serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.ccs-student-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.ccs-student-icon-button,
+.ccs-student-profile-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--student-line);
+  border-radius: var(--student-radius);
+  background: var(--student-panel);
+  color: var(--student-ink);
+  font: inherit;
+}
+
+.ccs-student-icon-button {
+  width: 42px;
+  height: 42px;
+  justify-content: center;
+}
+
+.ccs-student-badge {
+  position: absolute;
+  right: -7px;
+  top: -7px;
+  display: flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--student-panel);
+  border-radius: 999px;
+  background: var(--student-red);
+  color: var(--student-panel);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 0 4px;
+}
+
+.ccs-student-profile-button {
+  gap: 10px;
+  padding: 6px 10px 6px 6px;
+  text-align: left;
+}
+
+.ccs-student-avatar {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--student-plum);
+  color: var(--student-panel);
+  font-weight: 800;
+}
+
+.ccs-student-popover-wrap {
+  position: relative;
+}
+
+.ccs-student-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  overflow: hidden;
+  border: 1px solid var(--student-line);
+  border-radius: var(--student-radius);
+  background: var(--student-panel);
+  box-shadow: var(--student-shadow-raised);
+}
+
+.ccs-student-notifications {
+  width: min(360px, calc(100vw - 32px));
+}
+
+.ccs-student-profile-menu {
+  width: 190px;
+}
+
+.ccs-student-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--student-line);
+  padding: 13px 14px;
+}
+
+.ccs-student-dropdown-header h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.ccs-student-dropdown-header button,
+.ccs-student-check-button {
+  border: 0;
+  background: transparent;
+  color: var(--student-plum);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ccs-student-notification {
+  border-bottom: 1px solid var(--student-line);
+  padding: 13px 14px;
+}
+
+.ccs-student-notification[data-unread="true"] {
+  background: var(--student-plum-wash);
+}
+
+.ccs-student-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--student-ink);
+  font: inherit;
+  padding: 11px 13px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.ccs-student-menu-item:hover {
+  background: var(--student-plum-wash);
+  color: var(--student-plum);
+}
+
+.ccs-student-main {
+  min-width: 0;
+  padding: 28px;
+}
+
+.ccs-student-main :where(.bg-white) {
+  background: var(--student-panel) !important;
+}
+
+.ccs-student-main :where([class*="bg-gradient"]) {
+  border: 1px solid var(--student-line);
+  background: var(--student-panel) !important;
+  box-shadow: var(--student-shadow);
+}
+
+.ccs-student-main :where([class*="bg-["]) {
+  background: var(--student-plum) !important;
+  color: var(--student-panel) !important;
+}
+
+.ccs-student-main :where([class*="bg-["]) :where([class*="text-["], [class*="text-blue"], [class*="text-violet"], [class*="text-purple"], [class*="text-indigo"]) {
+  color: color-mix(in oklch, var(--student-panel) 82%, transparent) !important;
+}
+
+.ccs-student-main :where(.rounded-lg, .rounded-md, .rounded-xl, .rounded-2xl) {
+  border-radius: var(--student-radius) !important;
+}
+
+.ccs-student-main :where(.shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl) {
+  border: 1px solid var(--student-line);
+  box-shadow: var(--student-shadow) !important;
+}
+
+.ccs-student-main :where(section, article, div[class*="bg-white"][class*="p-"]) {
+  color: var(--student-ink);
+}
+
+.ccs-student-main :where(.overflow-hidden, .overflow-x-auto) {
+  border-radius: var(--student-radius);
+}
+
+.ccs-student-main :where(table) {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--student-panel);
+  color: var(--student-ink);
+}
+
+.ccs-student-main :where(th) {
+  border-bottom: 1px solid var(--student-line);
+  color: var(--student-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ccs-student-main :where(td) {
+  border-bottom: 1px solid var(--student-line);
+  color: var(--student-ink-soft);
+  font-size: 13px;
+}
+
+.ccs-student-main :where(tbody tr:hover) {
+  background: var(--student-plum-wash) !important;
+}
+
+.ccs-student-main :where(input, select, textarea) {
+  border-color: var(--student-line) !important;
+  border-radius: var(--student-radius) !important;
+  background: var(--student-panel);
+  color: var(--student-ink);
+  font: inherit;
+}
+
+.ccs-student-main :where(input:focus, select:focus, textarea:focus) {
+  border-color: var(--student-plum-soft) !important;
+  box-shadow: 0 0 0 4px var(--student-focus) !important;
+  outline: none;
+}
+
+.ccs-student-main :where(button[class*="bg-["], a[class*="bg-["], label[class*="bg-["], button[class*="bg-blue"], a[class*="bg-blue"], button[class*="bg-purple"], a[class*="bg-purple"], button[class*="bg-violet"], a[class*="bg-violet"], button[class*="bg-indigo"], a[class*="bg-indigo"]) {
+  border: 1px solid color-mix(in oklch, var(--student-plum) 72%, transparent) !important;
+  background: var(--student-plum) !important;
+  color: var(--student-panel) !important;
+  box-shadow: 0 10px 22px color-mix(in oklch, var(--student-plum) 18%, transparent);
+}
+
+.ccs-student-main :where(button[class*="bg-["]:hover, a[class*="bg-["]:hover, label[class*="bg-["]:hover, button[class*="bg-blue"]:hover, a[class*="bg-blue"]:hover, button[class*="bg-purple"]:hover, a[class*="bg-purple"]:hover, button[class*="bg-violet"]:hover, a[class*="bg-violet"]:hover, button[class*="bg-indigo"]:hover, a[class*="bg-indigo"]:hover) {
+  background: var(--student-plum-soft) !important;
+}
+
+.ccs-student-main :where([class*="text-["], [class*="text-blue"], [class*="text-violet"], [class*="text-purple"], [class*="text-indigo"]) {
+  color: var(--student-plum) !important;
+}
+
+.ccs-student-main :where([class*="bg-blue-50"], [class*="bg-blue-100"], [class*="bg-violet-50"], [class*="bg-violet-100"], [class*="bg-indigo-50"], [class*="bg-indigo-100"]) {
+  background: var(--student-plum-wash) !important;
+}
+
+.ccs-student-main :where([class*="bg-yellow"], [class*="bg-amber"]) {
+  background: var(--student-gold-wash) !important;
+}
+
+.ccs-student-main :where([class*="text-yellow"], [class*="text-amber"]) {
+  color: color-mix(in oklch, var(--student-gold) 70%, var(--student-ink)) !important;
+}
+
+.ccs-student-main :where([class*="bg-red-50"]) {
+  background: var(--student-red-wash) !important;
+}
+
+.ccs-student-main :where([class*="border-["]) {
+  border-color: var(--student-plum) !important;
+}
+
+.ccs-student-main :where([class*="bg-white/"]) {
+  background: color-mix(in oklch, var(--student-panel) 16%, transparent) !important;
+}
+
+.ccs-student-main :where(.fixed.inset-0) {
+  background: color-mix(in oklch, var(--student-ink) 44%, transparent) !important;
+  backdrop-filter: blur(4px);
+}
+
+.ccs-student-main :where(.fixed.inset-0 > div) {
+  border: 1px solid var(--student-line);
+  border-radius: var(--student-radius) !important;
+  background: var(--student-panel) !important;
+  box-shadow: var(--student-shadow-raised);
+}
+
+.ccs-student-main :where(h2, h3) {
+  color: var(--student-ink);
+}
+
+.ccs-student-main :where(h2) {
+  font-family: var(--student-font-display), Georgia, serif;
+  letter-spacing: 0;
+}
+
+.ccs-student-icon-button:focus-visible,
+.ccs-student-profile-button:focus-visible,
+.ccs-student-menu-item:focus-visible,
+.ccs-student-nav-item:focus-visible,
+.ccs-student-subnav-item:focus-visible,
+.ccs-student-main :where(button:focus-visible, a:focus-visible) {
+  outline: 3px solid var(--student-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 980px) {
+  .ccs-student-root {
+    grid-template-columns: 1fr;
+  }
+
+  .ccs-student-sidebar {
+    position: sticky;
+    z-index: 30;
+    height: auto;
+    max-height: 48dvh;
+  }
+
+  .ccs-student-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .ccs-student-nav-item,
+  .ccs-student-nav-group {
+    min-width: 180px;
+  }
+
+  .ccs-student-nav-children {
+    padding-left: 0;
+  }
+
+  .ccs-student-header {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ccs-student-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 640px) {
+  .ccs-student-sidebar,
+  .ccs-student-header,
+  .ccs-student-main {
+    padding: 18px;
+  }
+
+  .ccs-student-header h2 {
+    font-size: 28px;
+  }
+
+  .ccs-student-profile-button > div:last-child {
+    display: none;
+  }
+
+  .ccs-student-main {
+    overflow-x: clip;
+  }
+}

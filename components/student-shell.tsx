@@ -36,14 +36,11 @@ function NavItem({
   return (
     <Link
       href={href}
-      className={`flex items-center rounded-lg px-4 py-3 text-white transition hover:bg-blue-700 ${
-        active ? "bg-blue-700" : ""
-      }`}
+      className="ccs-student-nav-item"
+      data-active={active ? "true" : undefined}
     >
-      <i className={`fas ${icon} w-6 text-center text-lg`} />
-      <span className="sidebar-text ml-3 hidden whitespace-nowrap text-sm group-hover:inline">
-        {label}
-      </span>
+      <i className={`fas ${icon}`} aria-hidden />
+      <span>{label}</span>
     </Link>
   );
 }
@@ -172,22 +169,23 @@ export function StudentShell({
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <aside className="peer group fixed inset-y-0 left-0 z-20 w-20 overflow-y-auto bg-[#002044] py-8 text-white transition-all duration-300 hover:w-64">
-        <div className="flex flex-col items-center px-2">
+    <div className="ccs-student-root">
+      <aside className="ccs-student-sidebar">
+        <div className="ccs-student-brand">
           <Image
             alt="CCS Sit-In Monitoring System Logo"
             src="/inc/CCS_LOGO.png"
             width={72}
             height={72}
-            className="mb-4"
             priority
           />
-          <h1 className="mb-2 hidden text-center text-sm font-medium group-hover:block">
-            CCS Sit-In Monitoring System
-          </h1>
+          <div>
+            <p>Student Portal</p>
+            <h1>CCS Sit-In Monitoring System</h1>
+          </div>
+        </div>
 
-          <nav className="mt-10 w-full px-2">
+          <nav className="ccs-student-nav" aria-label="Student navigation">
             <NavItem href="/dashboard" label="Home" icon="fa-home" active={activePath === "/dashboard"} />
             <NavItem
               href="/announcement"
@@ -196,37 +194,32 @@ export function StudentShell({
               active={activePath === "/announcement"}
             />
 
-            <div className="group/rules relative">
+            <div className="ccs-student-nav-group">
               <button
                 type="button"
-                className={`flex w-full items-center rounded-lg px-4 py-3 text-white transition hover:bg-blue-700 ${
-                  activePath === "/sitin" || activePath === "/laboratory" ? "bg-blue-700" : ""
-                }`}
+                className="ccs-student-nav-item ccs-student-nav-button"
+                data-active={activePath === "/sitin" || activePath === "/laboratory" ? "true" : undefined}
               >
-                <i className="fas fa-clipboard-list w-6 text-center text-lg" />
-                <span className="sidebar-text ml-3 hidden whitespace-nowrap text-sm group-hover:inline">
-                  Rules & Regulations
-                </span>
-                <i className="fas fa-chevron-down ml-auto hidden text-xs group-hover:inline" />
+                <i className="fas fa-clipboard-list" aria-hidden />
+                <span>Rules & Regulations</span>
+                <i className="fas fa-chevron-down ccs-student-nav-chevron" aria-hidden />
               </button>
-              <div className="hidden pl-6 group-hover/rules:block">
+              <div className="ccs-student-nav-children">
                 <Link
                   href="/sitin"
-                  className={`flex items-center rounded-lg px-4 py-2 text-sm text-white transition hover:bg-blue-600 ${
-                    activePath === "/sitin" ? "bg-blue-600" : ""
-                  }`}
+                  className="ccs-student-subnav-item"
+                  data-active={activePath === "/sitin" ? "true" : undefined}
                 >
-                  <i className="fas fa-chair mr-3 w-4 text-center" />
-                  <span className="sidebar-text hidden group-hover:inline">Sit-In</span>
+                  <i className="fas fa-chair" aria-hidden />
+                  <span>Sit-In</span>
                 </Link>
                 <Link
                   href="/laboratory"
-                  className={`flex items-center rounded-lg px-4 py-2 text-sm text-white transition hover:bg-blue-600 ${
-                    activePath === "/laboratory" ? "bg-blue-600" : ""
-                  }`}
+                  className="ccs-student-subnav-item"
+                  data-active={activePath === "/laboratory" ? "true" : undefined}
                 >
-                  <i className="fas fa-flask mr-3 w-4 text-center" />
-                  <span className="sidebar-text hidden group-hover:inline">Laboratory</span>
+                  <i className="fas fa-flask" aria-hidden />
+                  <span>Laboratory</span>
                 </Link>
               </div>
             </div>
@@ -257,40 +250,42 @@ export function StudentShell({
               active={activePath === "/resources"}
             />
           </nav>
-        </div>
       </aside>
 
-      <div className="ml-20 flex min-h-screen flex-col transition-[margin] duration-300 peer-hover:ml-64">
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-6 py-4">
-          <h2 className="text-2xl font-semibold">{title}</h2>
+      <div className="ccs-student-content">
+        <header className="ccs-student-header">
+          <div>
+            <p className="ccs-student-eyebrow">Student Workspace</p>
+            <h2>{title}</h2>
+          </div>
 
-          <div className="flex items-center gap-6">
-            <div className="relative" ref={notificationRef}>
+          <div className="ccs-student-actions">
+            <div className="ccs-student-popover-wrap" ref={notificationRef}>
               <button
                 type="button"
                 onClick={() => {
                   setNotificationsOpen((current) => !current);
                   setProfileOpen(false);
                 }}
-                className="relative"
+                className="ccs-student-icon-button"
+                aria-label="Open notifications"
               >
-                <i className="fas fa-bell text-xl" />
+                <i className="fas fa-bell" aria-hidden />
                 {unreadCount > 0 ? (
-                  <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] text-white">
+                  <span className="ccs-student-badge">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 ) : null}
               </button>
 
               {notificationsOpen ? (
-                <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-lg bg-white shadow-lg">
-                  <div className="flex items-center justify-between border-b p-4">
+                <div className="ccs-student-dropdown ccs-student-notifications">
+                  <div className="ccs-student-dropdown-header">
                     <h3 className="font-semibold">Notifications</h3>
                     {unreadCount > 0 ? (
                       <button
                         type="button"
                         onClick={markAllRead}
-                        className="text-xs text-blue-500 hover:text-blue-700"
                       >
                         Mark All as Read
                       </button>
@@ -301,9 +296,8 @@ export function StudentShell({
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`border-b p-4 ${
-                            notification.read ? "" : "bg-blue-50"
-                          }`}
+                          className="ccs-student-notification"
+                          data-unread={!notification.read ? "true" : undefined}
                         >
                           <div className="flex justify-between gap-3">
                             <p className={`text-sm ${notification.read ? "text-gray-600" : "font-medium text-gray-900"}`}>
@@ -313,9 +307,10 @@ export function StudentShell({
                               <button
                                 type="button"
                                 onClick={() => markNotificationRead(notification.id)}
-                                className="text-xs text-blue-500 hover:text-blue-700"
+                                className="ccs-student-check-button"
+                                aria-label="Mark notification as read"
                               >
-                                <i className="fas fa-check" />
+                                <i className="fas fa-check" aria-hidden />
                               </button>
                             ) : null}
                           </div>
@@ -330,43 +325,43 @@ export function StudentShell({
               ) : null}
             </div>
 
-            <div className="relative" ref={profileRef}>
+            <div className="ccs-student-popover-wrap" ref={profileRef}>
               <button
                 type="button"
                 onClick={() => {
                   setProfileOpen((current) => !current);
                   setNotificationsOpen(false);
                 }}
-                className="flex items-center gap-2"
+                className="ccs-student-profile-button"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-gray-300 text-lg font-semibold text-black">
+                <div className="ccs-student-avatar">
                   {profile?.initials ?? "?"}
                 </div>
-                <div className="text-left">
+                <div>
                   <p className="text-sm font-semibold">{profile?.name ?? "Loading profile..."}</p>
                   <p className="text-xs text-gray-500">{profile?.role ?? "Student"}</p>
                 </div>
               </button>
 
               {profileOpen ? (
-                <div className="absolute right-0 mt-3 w-48 rounded-lg bg-white shadow-lg">
+                <div className="ccs-student-dropdown ccs-student-profile-menu">
                   <Link
                     href="/profile"
-                    className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    className="ccs-student-menu-item"
                     onClick={() => setProfileOpen(false)}
                   >
-                    <i className="fas fa-user mr-3" />
+                    <i className="fas fa-user" aria-hidden />
                     Profile
                   </Link>
                   <button
                     type="button"
-                    className="flex w-full items-center px-4 py-2 text-left text-gray-700 hover:bg-gray-100"
+                    className="ccs-student-menu-item"
                     onClick={() => {
                       setProfileOpen(false);
                       void onLogout();
                     }}
                   >
-                    <i className="fas fa-sign-out-alt mr-3" />
+                    <i className="fas fa-sign-out-alt" aria-hidden />
                     Logout
                   </button>
                 </div>
@@ -375,7 +370,7 @@ export function StudentShell({
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="ccs-student-main">{children}</main>
       </div>
     </div>
   );
