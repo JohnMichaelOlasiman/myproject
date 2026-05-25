@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-poppins);
+  --font-sans: var(--font-ibm-plex-sans);
+  --font-display: var(--font-fraunces);
 }
 
 * {
@@ -10,4 +11,9 @@
 
 body {
   margin: 0;
+}
+
+html,
+body {
+  overflow-x: clip;
 }

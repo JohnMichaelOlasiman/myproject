@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Fraunces, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: "--font-ibm-plex-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -19,14 +25,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${poppins.variable} h-full antialiased`}>
+    <html lang="en" className={`${ibmPlexSans.variable} ${fraunces.variable} h-full antialiased`}>
       <head>
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
         />
       </head>
-      <body className="min-h-full bg-[#f3f4f6] font-sans text-[#333]">{children}</body>
+      <body className="min-h-full bg-white font-sans text-slate-950">{children}</body>
     </html>
   );
 }

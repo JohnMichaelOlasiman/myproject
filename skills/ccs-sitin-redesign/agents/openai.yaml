@@ -1,0 +1,4 @@
+interface:
+  display_name: "CCS Sit-In Redesign"
+  short_description: "UI-only Campus Ops redesign workflow"
+  default_prompt: "Use $ccs-sitin-redesign to audit and redesign this page UI-only while preserving behavior."
