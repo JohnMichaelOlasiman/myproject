@@ -65,7 +65,7 @@ function stringValue(value: unknown) {
 
 function coerceCourse(value: unknown): Course {
   const candidate = stringValue(value).toUpperCase();
-  return ["BSIT", "BSCS", "HM", "CRIM", "CBA"].includes(candidate) ? (candidate as Course) : "BSIT";
+  return ["BSIT", "BSCS", "ACT"].includes(candidate) ? (candidate as Course) : "BSIT";
 }
 
 function coerceLevel(value: unknown): Level {

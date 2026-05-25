@@ -1,6 +1,6 @@
 import { Course, LabNumber, Level } from "@/lib/supabase/types";
 
-export const courseOptions: Course[] = ["BSIT", "BSCS", "HM", "CRIM", "CBA"];
+export const courseOptions: Course[] = ["BSIT", "BSCS", "ACT"];
 export const levelOptions: Level[] = ["1", "2", "3", "4"];
 export const labOptions: LabNumber[] = ["524", "526", "528", "530", "542", "544"];
 

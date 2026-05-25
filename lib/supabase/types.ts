@@ -1,5 +1,5 @@
 export type UserRole = "student" | "admin";
-export type Course = "BSIT" | "BSCS" | "HM" | "CRIM" | "CBA";
+export type Course = "BSIT" | "BSCS" | "ACT";
 export type Level = "1" | "2" | "3" | "4";
 export type LabNumber = "524" | "526" | "528" | "530" | "542" | "544";
 export type ReservationStatus = "pending" | "approved" | "declined" | "sit-inned" | "completed";
