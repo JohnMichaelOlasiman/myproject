@@ -39,14 +39,11 @@ function NavItem({
   return (
     <Link
       href={href}
-      className={`mx-2 flex items-center rounded-lg px-4 py-3 text-white transition hover:bg-blue-700 ${
-        active ? "bg-blue-700" : ""
-      }`}
+      className="ccs-admin-nav-item"
+      data-active={active ? "true" : undefined}
     >
-      <i className={`fas ${icon} w-5 text-center`} />
-      <span className="sidebar-text ml-3 hidden whitespace-nowrap text-sm group-hover:inline">
-        {label}
-      </span>
+      <i className={`fas ${icon}`} aria-hidden />
+      <span>{label}</span>
     </Link>
   );
 }
@@ -63,20 +60,17 @@ function GroupItem({
   children: ReactNode;
 }) {
   return (
-    <div className="group/menu">
+    <div className="ccs-admin-nav-group">
       <button
         type="button"
-        className={`mx-2 flex w-[calc(100%-1rem)] items-center rounded-lg px-4 py-3 text-white transition hover:bg-blue-700 ${
-          active ? "bg-blue-700" : ""
-        }`}
+        className="ccs-admin-nav-item ccs-admin-nav-button"
+        data-active={active ? "true" : undefined}
       >
-        <i className={`fas ${icon} w-5 text-center`} />
-        <span className="sidebar-text ml-3 hidden whitespace-nowrap text-sm group-hover:inline">
-          {label}
-        </span>
-        <i className="fas fa-chevron-down sidebar-text ml-auto hidden text-xs group-hover:inline" />
+        <i className={`fas ${icon}`} aria-hidden />
+        <span>{label}</span>
+        <i className="fas fa-chevron-down ccs-admin-nav-chevron" aria-hidden />
       </button>
-      <div className="hidden pl-2 group-hover/menu:block">{children}</div>
+      <div className="ccs-admin-nav-children">{children}</div>
     </div>
   );
 }
@@ -210,23 +204,23 @@ export function AdminShell({
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <aside className="peer group fixed inset-y-0 left-0 z-20 w-20 overflow-y-auto bg-[#002044] py-8 text-white transition-all duration-300 hover:w-64">
-        <div className="flex flex-col items-center">
+    <div className="ccs-admin-root">
+      <aside className="ccs-admin-sidebar">
+        <div className="ccs-admin-brand">
           <Image
             alt="CCS Sit-In Monitoring System Logo"
-            className="mb-4"
             src="/inc/CCS_LOGO.png"
             width={70}
             height={70}
             priority
           />
-          <h1 className="sidebar-text hidden px-2 text-center text-sm group-hover:block">
-            CCS Sit-In Monitoring System
-          </h1>
+          <div>
+            <p>CCS Sit-In</p>
+            <h1>Monitoring System</h1>
+          </div>
         </div>
 
-        <nav className="mt-10 w-full space-y-1">
+        <nav className="ccs-admin-nav" aria-label="Admin navigation">
           <NavItem
             href="/admin/dashboard"
             label="Dashboard"
@@ -257,30 +251,27 @@ export function AdminShell({
           >
             <Link
               href="/admin/current-sit"
-              className={`mx-2 flex items-center rounded-lg px-4 py-2 text-sm text-white hover:bg-blue-600 ${
-                isActive(pathname, "/admin/current-sit") ? "bg-blue-600" : ""
-              }`}
+              className="ccs-admin-subnav-item"
+              data-active={isActive(pathname, "/admin/current-sit") ? "true" : undefined}
             >
-              <i className="fas fa-eye mr-3 w-4 text-center" />
-              <span className="sidebar-text hidden group-hover:inline">Current Sit-In</span>
+              <i className="fas fa-eye" aria-hidden />
+              <span>Current Sit-In</span>
             </Link>
             <Link
               href="/admin/day-sit"
-              className={`mx-2 flex items-center rounded-lg px-4 py-2 text-sm text-white hover:bg-blue-600 ${
-                isActive(pathname, "/admin/day-sit") ? "bg-blue-600" : ""
-              }`}
+              className="ccs-admin-subnav-item"
+              data-active={isActive(pathname, "/admin/day-sit") ? "true" : undefined}
             >
-              <i className="fas fa-archive mr-3 w-4 text-center" />
-              <span className="sidebar-text hidden group-hover:inline">Records</span>
+              <i className="fas fa-archive" aria-hidden />
+              <span>Records</span>
             </Link>
             <Link
               href="/admin/rewards"
-              className={`mx-2 flex items-center rounded-lg px-4 py-2 text-sm text-white hover:bg-blue-600 ${
-                isActive(pathname, "/admin/rewards") ? "bg-blue-600" : ""
-              }`}
+              className="ccs-admin-subnav-item"
+              data-active={isActive(pathname, "/admin/rewards") ? "true" : undefined}
             >
-              <i className="fas fa-gift mr-3 w-4 text-center" />
-              <span className="sidebar-text hidden group-hover:inline">Rewards</span>
+              <i className="fas fa-gift" aria-hidden />
+              <span>Rewards</span>
             </Link>
           </GroupItem>
 
@@ -314,79 +305,78 @@ export function AdminShell({
           >
             <Link
               href="/admin/announcements"
-              className={`mx-2 flex items-center rounded-lg px-4 py-2 text-sm text-white hover:bg-blue-600 ${
-                isActive(pathname, "/admin/announcements") ? "bg-blue-600" : ""
-              }`}
+              className="ccs-admin-subnav-item"
+              data-active={isActive(pathname, "/admin/announcements") ? "true" : undefined}
             >
-              <i className="fas fa-bullhorn mr-3 w-4 text-center" />
-              <span className="sidebar-text hidden group-hover:inline">Announcements</span>
+              <i className="fas fa-bullhorn" aria-hidden />
+              <span>Announcements</span>
             </Link>
             <Link
               href="/admin/feedback"
-              className={`mx-2 flex items-center rounded-lg px-4 py-2 text-sm text-white hover:bg-blue-600 ${
-                isActive(pathname, "/admin/feedback") ? "bg-blue-600" : ""
-              }`}
+              className="ccs-admin-subnav-item"
+              data-active={isActive(pathname, "/admin/feedback") ? "true" : undefined}
             >
-              <i className="fas fa-comment-dots mr-3 w-4 text-center" />
-              <span className="sidebar-text hidden group-hover:inline">Feedback</span>
+              <i className="fas fa-comment-dots" aria-hidden />
+              <span>Feedback</span>
             </Link>
             <Link
               href="/admin/lab-schedule"
-              className={`mx-2 flex items-center rounded-lg px-4 py-2 text-sm text-white hover:bg-blue-600 ${
-                isActive(pathname, "/admin/lab-schedule") ? "bg-blue-600" : ""
-              }`}
+              className="ccs-admin-subnav-item"
+              data-active={isActive(pathname, "/admin/lab-schedule") ? "true" : undefined}
             >
-              <i className="fas fa-desktop mr-3 w-4 text-center" />
-              <span className="sidebar-text hidden group-hover:inline">Computer & Lab</span>
+              <i className="fas fa-desktop" aria-hidden />
+              <span>Computer & Lab</span>
             </Link>
           </GroupItem>
         </nav>
       </aside>
 
-      <div className="ml-20 flex min-h-screen flex-col transition-[margin] duration-300 peer-hover:ml-64">
-        <header className="sticky top-0 z-10 flex items-center justify-between bg-white px-6 py-6">
-          <h2 className="text-2xl font-semibold">{title}</h2>
+      <div className="ccs-admin-content">
+        <header className="ccs-admin-header">
+          <div>
+            <p className="ccs-admin-eyebrow">Admin Console</p>
+            <h2>{title}</h2>
+          </div>
 
-          <div className="flex items-center space-x-4">
-            <form onSubmit={onSearch} className="relative hidden w-80 sm:flex">
+          <div className="ccs-admin-actions">
+            <form onSubmit={onSearch} className="ccs-admin-search">
               <input
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search by Name or ID"
-                className="h-10 w-full rounded-full border border-gray-300 py-2 pl-5 pr-12 focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
-              <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2">
-                <i className="fas fa-search text-gray-400" />
+              <button type="submit" aria-label="Search admin records">
+                <i className="fas fa-search" aria-hidden />
               </button>
             </form>
 
-            <div className="relative" ref={notificationRef}>
+            <div className="ccs-admin-popover-wrap" ref={notificationRef}>
               <button
                 type="button"
                 onClick={() => {
                   setNotificationOpen((current) => !current);
                   setProfileOpen(false);
                 }}
-                className="relative"
+                className="ccs-admin-icon-button"
+                aria-label="Open notifications"
               >
-                <i className="fas fa-bell text-xl" />
+                <i className="fas fa-bell" aria-hidden />
                 {unread > 0 ? (
-                  <span className="absolute -right-2 -top-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] text-white">
+                  <span className="ccs-admin-badge">
                     {unread > 99 ? "99+" : unread}
                   </span>
                 ) : null}
               </button>
 
               {notificationOpen ? (
-                <div className="absolute right-0 mt-2 w-80 overflow-hidden rounded-lg bg-white shadow-lg">
-                  <div className="flex items-center justify-between border-b p-4">
+                <div className="ccs-admin-dropdown ccs-admin-notifications">
+                  <div className="ccs-admin-dropdown-header">
                     <h3 className="font-semibold">Notifications</h3>
                     {unread > 0 ? (
                       <button
                         type="button"
                         onClick={markAllRead}
-                        className="text-xs text-blue-500 hover:text-blue-700"
                       >
                         Mark All as Read
                       </button>
@@ -397,7 +387,8 @@ export function AdminShell({
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`border-b p-4 ${notification.read ? "" : "bg-blue-50"}`}
+                          className="ccs-admin-notification"
+                          data-unread={!notification.read ? "true" : undefined}
                         >
                           <div className="flex justify-between gap-2">
                             <p
@@ -411,9 +402,10 @@ export function AdminShell({
                               <button
                                 type="button"
                                 onClick={() => markRead(notification.id)}
-                                className="text-xs text-blue-500 hover:text-blue-700"
+                                className="ccs-admin-check-button"
+                                aria-label="Mark notification as read"
                               >
-                                <i className="fas fa-check" />
+                                <i className="fas fa-check" aria-hidden />
                               </button>
                             ) : null}
                           </div>
@@ -428,43 +420,43 @@ export function AdminShell({
               ) : null}
             </div>
 
-            <div className="relative" ref={profileRef}>
+            <div className="ccs-admin-popover-wrap" ref={profileRef}>
               <button
                 type="button"
                 onClick={() => {
                   setProfileOpen((current) => !current);
                   setNotificationOpen(false);
                 }}
-                className="flex items-center"
+                className="ccs-admin-profile-button"
               >
-                <div className="mr-2 flex h-12 w-12 items-center justify-center rounded-full border-2 border-gray-300 text-lg font-semibold text-black">
+                <div className="ccs-admin-avatar">
                   {profile.initials}
                 </div>
-                <div className="text-left">
+                <div>
                   <p className="text-sm font-semibold">{profile.name}</p>
                   <p className="text-xs text-gray-500">{profile.role}</p>
                 </div>
               </button>
 
               {profileOpen ? (
-                <div className="absolute right-0 mt-2 w-48 rounded-lg bg-white shadow-lg">
+                <div className="ccs-admin-dropdown ccs-admin-profile-menu">
                   <Link
                     href="/admin/profile"
-                    className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200"
+                    className="ccs-admin-menu-item"
                     onClick={() => setProfileOpen(false)}
                   >
-                    <i className="fas fa-user mr-3" />
+                    <i className="fas fa-user" aria-hidden />
                     Profile
                   </Link>
                   <button
                     type="button"
-                    className="flex w-full items-center px-4 py-2 text-left text-gray-700 hover:bg-gray-200"
+                    className="ccs-admin-menu-item"
                     onClick={() => {
                       setProfileOpen(false);
                       void onLogout();
                     }}
                   >
-                    <i className="fas fa-sign-out-alt mr-3" />
+                    <i className="fas fa-sign-out-alt" aria-hidden />
                     Logout
                   </button>
                 </div>
@@ -473,7 +465,7 @@ export function AdminShell({
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="ccs-admin-main">{children}</main>
       </div>
     </div>
   );
