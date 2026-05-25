@@ -1054,7 +1054,11 @@ export async function listReservations() {
   return (data ?? []) as ReservationRecord[];
 }
 
-export async function updateReservationStatus(id: number, status: ReservationRecord["status"]) {
+export async function updateReservationStatus(
+  id: number,
+  status: ReservationRecord["status"],
+  options?: { notify?: boolean },
+) {
   ensureConfigured();
   const supabase = getSupabaseBrowserClient();
   const { data: existingReservation, error: existingReservationError } = await supabase
@@ -1104,7 +1108,10 @@ export async function updateReservationStatus(id: number, status: ReservationRec
     handleError(computerUpdateError, "Unable to sync lab computer status.");
   }
 
-  const reservationOwnerId = reservation.user_id ?? (await findProfileByIdno(reservation.idno))?.id ?? null;
+  const shouldNotify = options?.notify ?? true;
+  const reservationOwnerId = shouldNotify
+    ? reservation.user_id ?? (await findProfileByIdno(reservation.idno))?.id ?? null
+    : null;
   if (reservationOwnerId) {
     await createNotification({
       user_id: reservationOwnerId,
@@ -1112,6 +1119,85 @@ export async function updateReservationStatus(id: number, status: ReservationRec
     });
   }
   return reservation;
+}
+
+export async function startSitInFromReservation(reservationId: number) {
+  ensureConfigured();
+  const supabase = getSupabaseBrowserClient();
+  const { data: reservationData, error: reservationError } = await supabase
+    .from("reservations")
+    .select("*")
+    .eq("id", reservationId)
+    .maybeSingle();
+  handleError(reservationError, "Unable to read reservation.");
+
+  const reservation = reservationData as ReservationRecord | null;
+  if (!reservation) {
+    throw new Error("Reservation not found.");
+  }
+  if (reservation.status !== "approved") {
+    throw new Error("Only approved reservations can be started as sit-ins.");
+  }
+
+  const { data: activeSitIns, error: activeSitInsError } = await supabase
+    .from("sit_in_records")
+    .select("id")
+    .eq("idno", reservation.idno)
+    .eq("status", "Sit-in")
+    .limit(1);
+  handleError(activeSitInsError, "Unable to validate active sit-ins.");
+  if ((activeSitIns ?? []).length > 0) {
+    throw new Error("This student already has an active sit-in.");
+  }
+
+  const profile = await findProfileByIdno(reservation.idno);
+  const now = new Date();
+  const sitIn = await createSitInRecord({
+    idno: reservation.idno,
+    full_name: reservation.full_name,
+    purpose: reservation.purpose,
+    lab_number: reservation.lab_number,
+    time_in: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+    date: now.toISOString().slice(0, 10),
+    session_remaining: profile?.session_remaining ?? 0,
+  });
+  const updatedReservation = await updateReservationStatus(reservation.id, "sit-inned", { notify: false });
+  return { sitIn, reservation: updatedReservation };
+}
+
+export async function completeReservationForSitIn(record: Pick<SitInRecord, "idno" | "lab_number">) {
+  ensureConfigured();
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*")
+    .eq("idno", record.idno)
+    .eq("lab_number", record.lab_number)
+    .eq("status", "sit-inned")
+    .order("updated_at", { ascending: false })
+    .limit(2);
+  handleError(error, "Unable to find matching reservation.");
+
+  const matches = (data ?? []) as ReservationRecord[];
+  if (matches.length === 0) {
+    return { reservation: null, warning: "" };
+  }
+  if (matches.length > 1) {
+    return {
+      reservation: null,
+      warning:
+        "Sit-in completed, but multiple active reservations matched this student and lab. Reservation status was not changed.",
+    };
+  }
+
+  const updated = await updateReservationStatus(matches[0].id, "completed", { notify: false });
+  return { reservation: updated, warning: "" };
+}
+
+export async function timeoutSitInRecordAndCompleteReservation(id: number) {
+  const record = await timeoutSitInRecord(id);
+  const { reservation, warning } = await completeReservationForSitIn(record);
+  return { record, reservation, warning };
 }
 
 export async function listSitInRecords(status?: SitInRecord["status"]) {
@@ -1253,9 +1339,10 @@ export async function listFeedback() {
 }
 
 export async function getStudentDashboardData(profile: ProfileRecord) {
-  const [announcements, sitIns] = await Promise.all([
+  const [announcements, sitIns, reservations] = await Promise.all([
     listAnnouncements(),
     listSitInRecords(),
+    listReservationsByIdno(profile.idno),
   ]);
 
   const userSitIns = sitIns.filter((record) => record.idno === profile.idno);
@@ -1271,6 +1358,7 @@ export async function getStudentDashboardData(profile: ProfileRecord) {
 
   return {
     announcements: announcements.slice(0, 4),
+    reservations,
     usage,
     profile,
   };

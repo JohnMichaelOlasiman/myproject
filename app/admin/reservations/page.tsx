@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin-shell";
 import { labOptions } from "@/lib/supabase/constants";
-import { listReservations, updateReservationStatus } from "@/lib/supabase/data";
+import { listReservations, startSitInFromReservation, updateReservationStatus } from "@/lib/supabase/data";
 import { ReservationRecord } from "@/lib/supabase/types";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -20,6 +20,7 @@ export default function AdminReservationsPage() {
   const [reservations, setReservations] = useState<ReservationRecord[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [processingId, setProcessingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -87,6 +88,8 @@ export default function AdminReservationsPage() {
 
   const setReservationStatus = async (reservationId: number, status: ReservationRecord["status"]) => {
     try {
+      setError("");
+      setProcessingId(reservationId);
       const updated = await updateReservationStatus(reservationId, status);
       setReservations((current) =>
         current.map((record) =>
@@ -95,7 +98,40 @@ export default function AdminReservationsPage() {
       );
     } catch (updateError) {
       setError(updateError instanceof Error ? updateError.message : "Unable to update reservation.");
+    } finally {
+      setProcessingId(null);
     }
+  };
+
+  const startReservationSitIn = async (reservationId: number) => {
+    try {
+      setError("");
+      setProcessingId(reservationId);
+      const { reservation } = await startSitInFromReservation(reservationId);
+      setReservations((current) =>
+        current.map((record) =>
+          record.id === reservationId ? reservation : record,
+        ),
+      );
+    } catch (startError) {
+      setError(startError instanceof Error ? startError.message : "Unable to start sit-in from reservation.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const statusClass = (status: ReservationRecord["status"]) => {
+    if (status === "approved") return "bg-emerald-100 text-emerald-700";
+    if (status === "declined") return "bg-rose-100 text-rose-700";
+    if (status === "sit-inned") return "bg-blue-100 text-blue-700";
+    if (status === "completed") return "bg-gray-100 text-gray-700";
+    return "bg-amber-100 text-amber-700";
+  };
+
+  const statusLabel = (status: ReservationRecord["status"]) => {
+    if (status === "approved") return "Ready for Check-In";
+    if (status === "sit-inned") return "In Progress";
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   return (
@@ -279,7 +315,7 @@ export default function AdminReservationsPage() {
                 <th className="px-4 py-4 text-center">Date</th>
                 <th className="px-4 py-4 text-center">Time In</th>
                 <th className="px-4 py-4 text-center">Purpose</th>
-                <th className="px-4 py-4 text-center">{tab === "pending" ? "Actions" : "Status"}</th>
+                <th className="px-4 py-4 text-center">{tab === "pending" ? "Actions" : "Status / Actions"}</th>
               </tr>
             </thead>
             <tbody>
@@ -305,32 +341,36 @@ export default function AdminReservationsPage() {
                           <button
                             type="button"
                             onClick={() => void setReservationStatus(reservation.id, "approved")}
+                            disabled={processingId === reservation.id}
                             className="rounded bg-blue-500 px-4 py-2 text-white"
                           >
-                            Approve
+                            {processingId === reservation.id ? "Saving..." : "Approve"}
                           </button>
                           <button
                             type="button"
                             onClick={() => void setReservationStatus(reservation.id, "declined")}
+                            disabled={processingId === reservation.id}
                             className="rounded bg-red-500 px-4 py-2 text-white"
                           >
                             Decline
                           </button>
                         </div>
                       ) : (
-                        <span
-                          className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                            reservation.status === "approved"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : reservation.status === "declined"
-                                ? "bg-rose-100 text-rose-700"
-                                : reservation.status === "sit-inned"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {reservation.status}
-                        </span>
+                        <div className="flex flex-col items-center gap-2">
+                          <span className={`rounded-full px-3 py-1 text-sm font-semibold ${statusClass(reservation.status)}`}>
+                            {statusLabel(reservation.status)}
+                          </span>
+                          {reservation.status === "approved" ? (
+                            <button
+                              type="button"
+                              onClick={() => void startReservationSitIn(reservation.id)}
+                              disabled={processingId === reservation.id}
+                              className="rounded bg-[#002044] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-gray-400"
+                            >
+                              {processingId === reservation.id ? "Starting..." : "Start Sit-In"}
+                            </button>
+                          ) : null}
+                        </div>
                       )}
                     </td>
                   </tr>

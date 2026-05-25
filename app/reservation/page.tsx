@@ -19,22 +19,24 @@ type ReservationRow = {
   purpose: string;
   date: string;
   timeIn: string;
-  status: "Approved" | "Pending" | "Rejected";
-  timeInStatus: string;
+  status: "Pending Approval" | "Ready for Check-In" | "Declined" | "In Progress" | "Completed";
+  sessionStatus: string;
 };
 
 function mapStatus(status: ReservationRecord["status"]): ReservationRow["status"] {
-  if (status === "approved" || status === "sit-inned" || status === "completed") return "Approved";
-  if (status === "declined") return "Rejected";
-  return "Pending";
+  if (status === "approved") return "Ready for Check-In";
+  if (status === "sit-inned") return "In Progress";
+  if (status === "completed") return "Completed";
+  if (status === "declined") return "Declined";
+  return "Pending Approval";
 }
 
-function mapTimeStatus(status: ReservationRecord["status"]) {
-  if (status === "completed") return "Completed";
-  if (status === "sit-inned") return "In Progress";
-  if (status === "approved") return "Approved";
+function mapSessionStatus(status: ReservationRecord["status"]) {
+  if (status === "completed") return "Session completed";
+  if (status === "sit-inned") return "Currently sitting in";
+  if (status === "approved") return "Waiting for admin check-in";
   if (status === "declined") return "N/A";
-  return "Pending";
+  return "Waiting for approval";
 }
 
 export default function ReservationPage() {
@@ -83,7 +85,7 @@ export default function ReservationPage() {
             date: row.reservation_date,
             timeIn: row.time_in,
             status: mapStatus(row.status),
-            timeInStatus: mapTimeStatus(row.status),
+            sessionStatus: mapSessionStatus(row.status),
           })),
         );
       } catch (loadError) {
@@ -159,7 +161,7 @@ export default function ReservationPage() {
           date: created.reservation_date,
           timeIn: created.time_in,
           status: mapStatus(created.status),
-          timeInStatus: mapTimeStatus(created.status),
+          sessionStatus: mapSessionStatus(created.status),
         },
         ...current,
       ]);
@@ -170,9 +172,11 @@ export default function ReservationPage() {
   };
 
   const statusClasses = {
-    Approved: "text-emerald-700 bg-emerald-100",
-    Pending: "text-amber-700 bg-amber-100",
-    Rejected: "text-rose-700 bg-rose-100",
+    "Pending Approval": "text-amber-700 bg-amber-100",
+    "Ready for Check-In": "text-emerald-700 bg-emerald-100",
+    Declined: "text-rose-700 bg-rose-100",
+    "In Progress": "text-blue-700 bg-blue-100",
+    Completed: "text-slate-700 bg-slate-100",
   } as const;
 
   return (
@@ -196,7 +200,7 @@ export default function ReservationPage() {
               <h3 className="text-2xl font-semibold">{profile?.session_remaining ?? 0} sessions left</h3>
             </div>
             <div className="rounded-lg bg-white/10 px-4 py-3 text-sm">
-              Use the laboratory status grid to reserve available PCs.
+              Approved reservations are checked in by an admin when you arrive.
             </div>
           </div>
         </div>
@@ -362,8 +366,8 @@ export default function ReservationPage() {
                   <th className="border-b px-4 py-3 text-left">Purpose</th>
                   <th className="border-b px-4 py-3 text-left">Date</th>
                   <th className="border-b px-4 py-3 text-left">Time In</th>
-                  <th className="border-b px-4 py-3 text-left">Status</th>
-                  <th className="border-b px-4 py-3 text-left">Time In Status</th>
+                  <th className="border-b px-4 py-3 text-left">Reservation Status</th>
+                  <th className="border-b px-4 py-3 text-left">Session Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -385,7 +389,7 @@ export default function ReservationPage() {
                         {row.status}
                       </span>
                     </td>
-                    <td className="border-b px-4 py-3">{row.timeInStatus}</td>
+                    <td className="border-b px-4 py-3">{row.sessionStatus}</td>
                   </tr>
                 ))}
               </tbody>

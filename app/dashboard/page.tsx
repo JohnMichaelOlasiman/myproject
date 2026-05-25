@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { StudentShell } from "@/components/student-shell";
-import { AnnouncementRecord, ProfileRecord } from "@/lib/supabase/types";
+import { AnnouncementRecord, ProfileRecord, ReservationRecord } from "@/lib/supabase/types";
 import { getCurrentProfileWithRetry, getStudentDashboardData } from "@/lib/supabase/data";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -17,9 +17,26 @@ function timeAgo(isoDate: string) {
   return `${days} day${days > 1 ? "s" : ""} ago`;
 }
 
+function reservationStatusLabel(status: ReservationRecord["status"]) {
+  if (status === "approved") return "Ready for Check-In";
+  if (status === "sit-inned") return "In Progress";
+  if (status === "completed") return "Completed";
+  if (status === "declined") return "Declined";
+  return "Pending Approval";
+}
+
+function reservationStatusClass(status: ReservationRecord["status"]) {
+  if (status === "approved") return "bg-emerald-100 text-emerald-700";
+  if (status === "sit-inned") return "bg-blue-100 text-blue-700";
+  if (status === "completed") return "bg-slate-100 text-slate-700";
+  if (status === "declined") return "bg-rose-100 text-rose-700";
+  return "bg-amber-100 text-amber-700";
+}
+
 export default function DashboardPage() {
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [announcements, setAnnouncements] = useState<AnnouncementRecord[]>([]);
+  const [reservations, setReservations] = useState<ReservationRecord[]>([]);
   const [usage, setUsage] = useState<Array<{ day: string; value: number }>>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -41,6 +58,7 @@ export default function DashboardPage() {
         if (!active) return;
         setProfile(data.profile);
         setAnnouncements(data.announcements);
+        setReservations(data.reservations);
         setUsage(data.usage);
       } catch (loadError) {
         if (active) {
@@ -60,6 +78,14 @@ export default function DashboardPage() {
   }, []);
 
   const max = useMemo(() => Math.max(...usage.map((item) => item.value), 1), [usage]);
+  const currentReservation = useMemo(
+    () =>
+      reservations.find((reservation) => reservation.status === "sit-inned") ??
+      reservations.find((reservation) => reservation.status === "approved") ??
+      reservations.find((reservation) => reservation.status === "pending") ??
+      null,
+    [reservations],
+  );
 
   return (
     <StudentShell title="Dashboard">
@@ -108,47 +134,83 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-lg bg-white p-6 shadow">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Announcements</h3>
-            <Link href="/announcement" className="text-sm text-blue-600 hover:text-blue-800">
-              View All
-            </Link>
+        <div className="space-y-6">
+          <div className="rounded-lg bg-white p-6 shadow">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Reservation Status</h3>
+              <Link href="/reservation" className="text-sm text-blue-600 hover:text-blue-800">
+                View
+              </Link>
+            </div>
+            {currentReservation ? (
+              <div className="space-y-3">
+                <span className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${reservationStatusClass(currentReservation.status)}`}>
+                  {reservationStatusLabel(currentReservation.status)}
+                </span>
+                <div>
+                  <p className="font-semibold">
+                    Lab {currentReservation.lab_number} · PC {currentReservation.pc_number}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {new Date(currentReservation.reservation_date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}{" "}
+                    at {currentReservation.time_in}
+                  </p>
+                  <p className="mt-2 text-sm text-gray-600">{currentReservation.purpose}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-600">
+                No active or upcoming reservation.
+              </div>
+            )}
           </div>
 
-          <div className="space-y-4">
-            {announcements.map((announcement, index) =>
-              index === 0 ? (
-                <Link href="/announcement" key={announcement.id} className="block">
-                  <div className="rounded-lg bg-[#002044] p-4 text-white">
-                    <div className="mb-2 flex items-center justify-between gap-4">
-                      <p className="font-semibold">{announcement.title}</p>
-                      <span className="text-sm">{timeAgo(announcement.created_at)}</span>
-                    </div>
-                    <Image
-                      src={announcement.attachment_url ?? "/inc/graphs.svg"}
-                      alt={announcement.attachment_name ?? "Announcement attachment"}
-                      width={800}
-                      height={200}
-                      className="mt-2 h-32 w-full rounded-lg object-cover"
-                    />
-                    <p className="mt-3 text-sm text-blue-100">{announcement.description}</p>
-                  </div>
-                </Link>
-              ) : (
-                <Link href="/announcement" key={announcement.id} className="block">
-                  <div className="rounded-lg bg-white p-4 shadow transition hover:bg-gray-50">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex-1">
+          <div className="rounded-lg bg-white p-6 shadow">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Announcements</h3>
+              <Link href="/announcement" className="text-sm text-blue-600 hover:text-blue-800">
+                View All
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {announcements.map((announcement, index) =>
+                index === 0 ? (
+                  <Link href="/announcement" key={announcement.id} className="block">
+                    <div className="rounded-lg bg-[#002044] p-4 text-white">
+                      <div className="mb-2 flex items-center justify-between gap-4">
                         <p className="font-semibold">{announcement.title}</p>
-                        <p className="mt-1 text-sm text-gray-600">{announcement.description}</p>
+                        <span className="text-sm">{timeAgo(announcement.created_at)}</span>
                       </div>
-                      <span className="text-sm text-gray-500">{timeAgo(announcement.created_at)}</span>
+                      <Image
+                        src={announcement.attachment_url ?? "/inc/graphs.svg"}
+                        alt={announcement.attachment_name ?? "Announcement attachment"}
+                        width={800}
+                        height={200}
+                        className="mt-2 h-32 w-full rounded-lg object-cover"
+                      />
+                      <p className="mt-3 text-sm text-blue-100">{announcement.description}</p>
                     </div>
-                  </div>
-                </Link>
-              ),
-            )}
+                  </Link>
+                ) : (
+                  <Link href="/announcement" key={announcement.id} className="block">
+                    <div className="rounded-lg bg-white p-4 shadow transition hover:bg-gray-50">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="font-semibold">{announcement.title}</p>
+                          <p className="mt-1 text-sm text-gray-600">{announcement.description}</p>
+                        </div>
+                        <span className="text-sm text-gray-500">{timeAgo(announcement.created_at)}</span>
+                      </div>
+                    </div>
+                  </Link>
+                ),
+              )}
+            </div>
           </div>
         </div>
       </div>

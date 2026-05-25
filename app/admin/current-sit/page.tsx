@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/admin-shell";
-import { listSitInRecords, timeoutSitInRecord } from "@/lib/supabase/data";
+import { listSitInRecords, timeoutSitInRecordAndCompleteReservation } from "@/lib/supabase/data";
 import { SitInRecord } from "@/lib/supabase/types";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -15,6 +15,7 @@ export default function AdminCurrentSitPage() {
   const [search, setSearch] = useState("");
   const [records, setRecords] = useState<SitInRecord[]>([]);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -50,8 +51,14 @@ export default function AdminCurrentSitPage() {
 
   const timeout = async (recordId: number) => {
     try {
-      await timeoutSitInRecord(recordId);
+      setError("");
+      setWarning("");
+      const result = await timeoutSitInRecordAndCompleteReservation(recordId);
       setRecords((current) => current.filter((record) => record.id !== recordId));
+      if (result.warning) {
+        setWarning(result.warning);
+        return;
+      }
       router.push("/admin/rewards");
     } catch (timeoutError) {
       setError(timeoutError instanceof Error ? timeoutError.message : "Unable to time out sit-in.");
@@ -62,6 +69,9 @@ export default function AdminCurrentSitPage() {
     <AdminShell title="Current Sit-In">
       {error ? (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">{error}</div>
+      ) : null}
+      {warning ? (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-700">{warning}</div>
       ) : null}
 
       <div className="mx-auto w-full max-w-6xl">
