@@ -45,6 +45,46 @@ function NavItem({
   );
 }
 
+function GroupItem({
+  id,
+  label,
+  icon,
+  active,
+  open,
+  onToggle,
+  children,
+}: {
+  id: string;
+  label: string;
+  icon: string;
+  active: boolean;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="ccs-student-nav-group" data-open={open ? "true" : "false"}>
+      <button
+        type="button"
+        className="ccs-student-nav-item ccs-student-nav-button"
+        data-active={active ? "true" : undefined}
+        aria-expanded={open}
+        aria-controls={`${id}-children`}
+        onClick={onToggle}
+      >
+        <i className={`fas ${icon}`} aria-hidden />
+        <span>{label}</span>
+        <i className="fas fa-chevron-down ccs-student-nav-chevron" aria-hidden />
+      </button>
+      {open ? (
+        <div id={`${id}-children`} className="ccs-student-nav-children">
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function StudentShell({
   title,
   children,
@@ -55,6 +95,7 @@ export function StudentShell({
   const pathname = usePathname();
   const router = useRouter();
   const activePath = pathname === "/" ? "/dashboard" : pathname;
+  const rulesActive = activePath === "/sitin" || activePath === "/laboratory";
   const [profile, setProfile] = useState<{
     id: string;
     name: string;
@@ -64,8 +105,11 @@ export function StudentShell({
   const [notifications, setNotifications] = useState(fallbackNotifications);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [rulesExpanded, setRulesExpanded] = useState(false);
+  const [rulesCollapsedWhileActive, setRulesCollapsedWhileActive] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const rulesOpen = rulesActive ? !rulesCollapsedWhileActive : rulesExpanded;
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read).length,
@@ -157,6 +201,15 @@ export function StudentShell({
     }
   };
 
+  const toggleRulesGroup = () => {
+    if (rulesActive) {
+      setRulesCollapsedWhileActive((current) => !current);
+      return;
+    }
+
+    setRulesExpanded((current) => !current);
+  };
+
   const onLogout = async () => {
     if (isSupabaseConfigured) {
       try {
@@ -185,71 +238,67 @@ export function StudentShell({
           </div>
         </div>
 
-          <nav className="ccs-student-nav" aria-label="Student navigation">
-            <NavItem href="/dashboard" label="Home" icon="fa-home" active={activePath === "/dashboard"} />
-            <NavItem
-              href="/announcement"
-              label="Announcements"
-              icon="fa-bullhorn"
-              active={activePath === "/announcement"}
-            />
+        <nav className="ccs-student-nav" aria-label="Student navigation">
+          <NavItem href="/dashboard" label="Home" icon="fa-home" active={activePath === "/dashboard"} />
+          <NavItem
+            href="/announcement"
+            label="Announcements"
+            icon="fa-bullhorn"
+            active={activePath === "/announcement"}
+          />
 
-            <div className="ccs-student-nav-group">
-              <button
-                type="button"
-                className="ccs-student-nav-item ccs-student-nav-button"
-                data-active={activePath === "/sitin" || activePath === "/laboratory" ? "true" : undefined}
-              >
-                <i className="fas fa-clipboard-list" aria-hidden />
-                <span>Rules & Regulations</span>
-                <i className="fas fa-chevron-down ccs-student-nav-chevron" aria-hidden />
-              </button>
-              <div className="ccs-student-nav-children">
-                <Link
-                  href="/sitin"
-                  className="ccs-student-subnav-item"
-                  data-active={activePath === "/sitin" ? "true" : undefined}
-                >
-                  <i className="fas fa-chair" aria-hidden />
-                  <span>Sit-In</span>
-                </Link>
-                <Link
-                  href="/laboratory"
-                  className="ccs-student-subnav-item"
-                  data-active={activePath === "/laboratory" ? "true" : undefined}
-                >
-                  <i className="fas fa-flask" aria-hidden />
-                  <span>Laboratory</span>
-                </Link>
-              </div>
-            </div>
+          <GroupItem
+            id="student-rules"
+            label="Rules & Regulations"
+            icon="fa-clipboard-list"
+            active={rulesActive}
+            open={rulesOpen}
+            onToggle={toggleRulesGroup}
+          >
+            <Link
+              href="/sitin"
+              className="ccs-student-subnav-item"
+              data-active={activePath === "/sitin" ? "true" : undefined}
+            >
+              <i className="fas fa-chair" aria-hidden />
+              <span>Sit-In</span>
+            </Link>
+            <Link
+              href="/laboratory"
+              className="ccs-student-subnav-item"
+              data-active={activePath === "/laboratory" ? "true" : undefined}
+            >
+              <i className="fas fa-flask" aria-hidden />
+              <span>Laboratory</span>
+            </Link>
+          </GroupItem>
 
-            <NavItem href="/history" label="History" icon="fa-history" active={activePath === "/history"} />
-            <NavItem
-              href="/lab"
-              label="Lab Schedule"
-              icon="fa-calendar-check"
-              active={activePath === "/lab"}
-            />
-            <NavItem
-              href="/reservation"
-              label="Reservations"
-              icon="fa-calendar-alt"
-              active={activePath === "/reservation"}
-            />
-            <NavItem
-              href="/leader"
-              label="Leaderboard"
-              icon="fa-trophy"
-              active={activePath === "/leader"}
-            />
-            <NavItem
-              href="/resources"
-              label="Resources"
-              icon="fa-boxes"
-              active={activePath === "/resources"}
-            />
-          </nav>
+          <NavItem href="/history" label="History" icon="fa-history" active={activePath === "/history"} />
+          <NavItem
+            href="/lab"
+            label="Lab Schedule"
+            icon="fa-calendar-check"
+            active={activePath === "/lab"}
+          />
+          <NavItem
+            href="/reservation"
+            label="Reservations"
+            icon="fa-calendar-alt"
+            active={activePath === "/reservation"}
+          />
+          <NavItem
+            href="/leader"
+            label="Leaderboard"
+            icon="fa-trophy"
+            active={activePath === "/leader"}
+          />
+          <NavItem
+            href="/resources"
+            label="Resources"
+            icon="fa-boxes"
+            active={activePath === "/resources"}
+          />
+        </nav>
       </aside>
 
       <div className="ccs-student-content">

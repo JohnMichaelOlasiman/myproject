@@ -49,28 +49,41 @@ function NavItem({
 }
 
 function GroupItem({
+  id,
   label,
   icon,
   active,
+  open,
+  onToggle,
   children,
 }: {
+  id: string;
   label: string;
   icon: string;
   active: boolean;
+  open: boolean;
+  onToggle: () => void;
   children: ReactNode;
 }) {
   return (
-    <div className="ccs-admin-nav-group">
+    <div className="ccs-admin-nav-group" data-open={open ? "true" : "false"}>
       <button
         type="button"
         className="ccs-admin-nav-item ccs-admin-nav-button"
         data-active={active ? "true" : undefined}
+        aria-expanded={open}
+        aria-controls={`${id}-children`}
+        onClick={onToggle}
       >
         <i className={`fas ${icon}`} aria-hidden />
         <span>{label}</span>
         <i className="fas fa-chevron-down ccs-admin-nav-chevron" aria-hidden />
       </button>
-      <div className="ccs-admin-nav-children">{children}</div>
+      {open ? (
+        <div id={`${id}-children`} className="ccs-admin-nav-children">
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -86,7 +99,23 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const sitInActive =
+    isActive(pathname, "/admin/current-sit") ||
+    isActive(pathname, "/admin/day-sit") ||
+    isActive(pathname, "/admin/rewards");
+  const communicationActive =
+    isActive(pathname, "/admin/announcements") ||
+    isActive(pathname, "/admin/feedback") ||
+    isActive(pathname, "/admin/lab-schedule");
   const [query, setQuery] = useState(initialSearch);
+  const [expandedNavGroups, setExpandedNavGroups] = useState({
+    sitIn: false,
+    communication: false,
+  });
+  const [collapsedActiveNavGroups, setCollapsedActiveNavGroups] = useState({
+    sitIn: false,
+    communication: false,
+  });
   const [profile, setProfile] = useState({
     id: "",
     name: "System Admin",
@@ -100,6 +129,10 @@ export function AdminShell({
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const sitInOpen = sitInActive ? !collapsedActiveNavGroups.sitIn : expandedNavGroups.sitIn;
+  const communicationOpen = communicationActive
+    ? !collapsedActiveNavGroups.communication
+    : expandedNavGroups.communication;
 
   useEffect(() => {
     let active = true;
@@ -192,6 +225,24 @@ export function AdminShell({
     router.push(`/admin/search-results?query=${encodeURIComponent(query.trim())}`);
   };
 
+  const toggleNavGroup = (
+    group: keyof typeof expandedNavGroups,
+    active: boolean,
+  ) => {
+    if (active) {
+      setCollapsedActiveNavGroups((current) => ({
+        ...current,
+        [group]: !current[group],
+      }));
+      return;
+    }
+
+    setExpandedNavGroups((current) => ({
+      ...current,
+      [group]: !current[group],
+    }));
+  };
+
   const onLogout = async () => {
     if (isSupabaseConfigured) {
       try {
@@ -241,13 +292,12 @@ export function AdminShell({
           />
 
           <GroupItem
+            id="admin-sit-in"
             label="Sit-In"
             icon="fa-chair"
-            active={
-              isActive(pathname, "/admin/current-sit") ||
-              isActive(pathname, "/admin/day-sit") ||
-              isActive(pathname, "/admin/rewards")
-            }
+            active={sitInActive}
+            open={sitInOpen}
+            onToggle={() => toggleNavGroup("sitIn", sitInActive)}
           >
             <Link
               href="/admin/current-sit"
@@ -295,13 +345,12 @@ export function AdminShell({
           />
 
           <GroupItem
+            id="admin-communication"
             label="Communication"
             icon="fa-comments"
-            active={
-              isActive(pathname, "/admin/announcements") ||
-              isActive(pathname, "/admin/feedback") ||
-              isActive(pathname, "/admin/lab-schedule")
-            }
+            active={communicationActive}
+            open={communicationOpen}
+            onToggle={() => toggleNavGroup("communication", communicationActive)}
           >
             <Link
               href="/admin/announcements"
